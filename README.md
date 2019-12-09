@@ -28,14 +28,20 @@ Symphony cluster is created with the default user names and passwords.
 ## Installing
 
 * Login to your Openshift cluster
+```bash
 oc login
+```
 * Create application template for Symphony
+```bash
 oc create -f ibm-spectrum-symphony-app-template.yaml
+```
 * Add new "IBM&reg; Spectrum Symphony Application" (template instance) from the catalog
 
 ## Uninstalling
 
 * Delete the application template
+```bash
 oc delete template ibm-spectrum-symphony-app
+```
 * Find and delete all TemplateInstances of the Symphony applications created
 

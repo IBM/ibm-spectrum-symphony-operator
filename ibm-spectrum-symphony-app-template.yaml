@@ -115,8 +115,6 @@ objects:
         ref: ${GIT_APP_SRC_BRANCH}
       contextDir: ${GIT_APP_SRC_PATH}
     triggers:
-      - type: GitHub
-        github:
       - type: ConfigChange
     runPolicy: Serial
 - kind: DeploymentConfig
@@ -313,7 +311,7 @@ parameters:
   displayName: Application GIT repository
   name: GIT_APP_SRC
   required: true
-  value: ssh://git@github.com/IBMSpectrumComputing/sym-ocp.git
+  value: https://github.com/IBMSpectrumComputing/sym-ocp.git
 - description: GIT repository branch
   displayName: Application GIT repository branch
   name: GIT_APP_SRC_BRANCH
