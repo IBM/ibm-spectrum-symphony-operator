@@ -1,0 +1,1 @@
+Openshift BuildConfig Docker strategy

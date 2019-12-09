@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Profile xmlns="http://www.platform.com/Symphony/Profile/Application" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="7.3">
+
+    <Consumer applicationName="SampleAppCPP" consumerId="/SampleAppCPP"
+              taskHighWaterMark="1.0" taskLowWaterMark="1.0"
+              preStartApplication="false" numOfSlotsForPreloadedServices="1"/>
+
+    <SOAM version="7.3">
+        <SSM resReq="" workDir="${EGO_SHARED_TOP}/soam/work">
+    	     <boundaryManagerConfig>
+                <boundaries>
+                    <boundary elementName="AvailableMemory">
+                        <event name="BEV_PROACTIVE" value="50"/>
+                        <event name="BEV_SEVERE" value="40"/>
+                        <event name="BEV_CRITICAL" value="0"/>
+                        <event name="BEV_HALT" value="0"/>
+                    </boundary>
+                    <boundary elementName="AvailableVirtualAddressSpace">
+                        <event name="BEV_PROACTIVE" value="50"/>
+                        <event name="BEV_SEVERE" value="40"/>
+                        <event name="BEV_CRITICAL" value="25"/>
+                        <event name="BEV_HALT" value="15"/>
+                    </boundary>
+                </boundaries>
+            </boundaryManagerConfig>
+	 </SSM>
+        <SIM startUpTimeout="120"/>
+        <DataHistory fileSwitchSize="100" lastingPeriod="96"/>
+        <PagingTasksInput blockSize="4096" diskSpace="4294967296"/>
+        <PagingTasksOutput blockSize="4096" diskSpace="4294967296"/>
+        <PagingCommonData blockSize="102400" diskSpace="8589934592"/>
+        <PagingCommonDataUpdates diskSpace="8589934592" blockSize="102400"/>
+    </SOAM>
+
+    <SessionTypes>
+        <Type name="ShortRunningTasks" priority="1" recoverable="false"
+              sessionRetryLimit="3" taskRetryLimit="3"
+              abortSessionIfTaskFail="false" abortSessionIfClientDisconnect="true"
+              suspendGracePeriod="100"  taskCleanupPeriod="100"/>
+    </SessionTypes>
+
+    <Service description="The Sample Service" name="SampleService" packageName="SampleServiceCPP">
+        <osTypes>
+            <osType name="all"
+               startCmd="${SOAM_DEPLOY_DIR}/SampleServiceCPP"
+               workDir="${SOAM_HOME}/work">
+            </osType>
+        </osTypes>
+        <Control>
+            <Method name="Register">
+                <Timeout duration="60" actionOnSI="blockHost"/>
+                <Exit actionOnSI="blockHost"/>
+            </Method>
+            <Method name="CreateService">
+                <Timeout duration="0" actionOnSI="blockHost"/>
+                <Exit actionOnSI="blockHost"/>
+                <Return controlCode="0" actionOnSI="keepAlive"/>
+                <Exception type="failure" controlCode="0" actionOnSI="blockHost"/>
+                <Exception type="fatal" controlCode="0" actionOnSI="blockHost"/>
+            </Method>
+            <Method name="SessionEnter">
+                <Timeout duration="0" actionOnSI="blockHost" actionOnWorkload="retry"/>
+                <Exit actionOnSI="blockHost" actionOnWorkload="retry"/>
+                <Return controlCode="0" actionOnSI="keepAlive" actionOnWorkload="succeed"/>
+                <Exception type="failure" controlCode="0" actionOnSI="keepAlive" actionOnWorkload="retry"/>
+                <Exception type="fatal" controlCode="0" actionOnSI="keepAlive" actionOnWorkload="fail"/>
+            </Method>
+            <Method name="SessionUpdate">
+                <Timeout duration="0" actionOnSI="blockHost" actionOnWorkload="retry"/>
+                <Exit actionOnSI="blockHost" actionOnWorkload="retry"/>
+                <Return controlCode="0" actionOnSI="keepAlive" actionOnWorkload="succeed"/>
+                <Exception type="failure" controlCode="0" actionOnSI="keepAlive" actionOnWorkload="retry"/>
+                <Exception type="fatal" controlCode="0" actionOnSI="keepAlive" actionOnWorkload="fail"/>
+            </Method>
+            <Method name="Invoke">
+                <Timeout duration="0" actionOnSI="restartService" actionOnWorkload="retry"/>
+                <Exit actionOnSI="restartService" actionOnWorkload="retry"/>
+                <Return controlCode="0" actionOnSI="keepAlive" actionOnWorkload="succeed"/>
+                <Exception type="failure" controlCode="0" actionOnSI="keepAlive" actionOnWorkload="retry"/>
+                <Exception type="fatal" controlCode="0" actionOnSI="keepAlive" actionOnWorkload="fail"/>
+            </Method>
+            <Method name="SessionLeave">
+                <Timeout duration="0" actionOnSI="restartService"/>
+                <Exit actionOnSI="restartService"/>
+                <Return controlCode="0" actionOnSI="keepAlive"/>
+                <Exception type="failure" controlCode="0" actionOnSI="keepAlive"/>
+                <Exception type="fatal" controlCode="0" actionOnSI="keepAlive"/>
+            </Method>
+            <Method name="DestroyService">
+                <Timeout duration="15"/>
+            </Method>
+        </Control>
+    </Service>
+
+</Profile>

@@ -1,0 +1,411 @@
+---
+apiVersion: template.openshift.io/v1
+kind: Template
+labels:
+  app: ibm-spectrum-symphony-app
+  template: ibm-spectrum-symphony-app
+message: 'The following service(s) have been created in your project ${NAME}.'
+metadata:
+  annotations:
+    description: IBM Spectrum Symphony Application.
+    iconClass: icon-other-unknown
+    openshift.io/display-name: IBM Spectrum Symphony
+    openshift.io/documentation-url: https://www.ibm.com/us-en/marketplace/analytics-workload-management
+    openshift.io/long-description: This template defines resources needed to run a Symphony application.
+    openshift.io/provider-display-name: IBM, Inc.
+    openshift.io/support-url: https://ibm.com
+    tags: symphony
+    bindable: 'false'
+  name: ibm-spectrum-symphony-app
+objects:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      description: Exposes and load balances the application pods
+    name: '${NAME}'
+  spec:
+    type: NodePort
+    ports:
+    - name: webgui
+      port: 8443
+    selector:
+      name: '${NAME}'
+      role: master
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    name: '${NAME}-webgui'
+  spec:
+    port:
+      targetPort: webgui
+    to:
+      kind: Service
+      name: '${NAME}'
+    tls:
+      termination: passthrough
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: '${NAME}'
+    labels:
+      name: '${NAME}'
+  spec:
+    accessModes:
+    - ReadWriteMany
+    resources:
+      requests:
+        storage: 5Gi
+- apiVersion: autoscaling/v1
+  kind: HorizontalPodAutoscaler
+  metadata:
+    name: '${NAME}'
+    labels:
+      name: '${NAME}'
+  spec:
+    scaleTargetRef:
+      kind: DeploymentConfig
+      apiVersion: apps.openshift.io/v1
+      name: '${NAME}-compute'
+    minReplicas: 1
+    maxReplicas: 64
+    targetCPUUtilizationPercentage: ${{HAS_CPU_UTILIZATON}}
+- kind: ImageStream
+  apiVersion: v1
+  metadata:
+    name: ${NAME}-client
+    labels:
+      name: ${NAME}
+  spec:
+    lookupPolicy:
+      local: true
+- kind: BuildConfig
+  apiVersion: build.openshift.io/v1
+  metadata:
+    name: ${NAME}-client
+    labels:
+      name: ${NAME}
+  spec:
+    serviceAccount: builder
+    nodeSelector: null
+    resources:
+      requests:
+        cpu: '${CPU_REQ_BUILD}'
+        memory: '${MEMORY_REQ_BUILD}'
+      limits:
+        cpu: '${CPU_LIMIT_BUILD}'
+        memory: '${MEMORY_LIMIT_BUILD}'
+    output:
+      to:
+        kind: ImageStreamTag
+        name: '${NAME}-client:latest'
+    successfulBuildsHistoryLimit: 2
+    failedBuildsHistoryLimit: 2
+    strategy:
+      type: Docker
+      dockerStrategy:
+        from:
+          kind: DockerImage
+          name: ${IMAGE}
+    postCommit: {}
+    source:
+      type: Git
+      git:
+        uri: ${GIT_APP_SRC}
+        ref: ${GIT_APP_SRC_BRANCH}
+      contextDir: ${GIT_APP_SRC_PATH}
+    triggers:
+      - type: GitHub
+        github:
+      - type: ConfigChange
+    runPolicy: Serial
+- kind: DeploymentConfig
+  apiVersion: apps.openshift.io/v1
+  metadata:
+    annotations:
+      description: Defines how to deploy the application server
+      template.alpha.openshift.io/wait-for-ready: 'true'
+    name: '${NAME}-master'
+  spec:
+    replicas: 1
+    selector:
+      name: '${NAME}'
+    strategy:
+      type: Rolling
+    triggers:
+    - type: ConfigChange
+    template:
+      metadata:
+        labels:
+          name: '${NAME}'
+          role: master
+        name: '${NAME}'
+      spec:
+        hostname: master
+        volumes:
+        - name: '${NAME}-master'
+          persistentVolumeClaim:
+            claimName: '${NAME}'
+        containers:
+        - name: '${NAME}-master'
+          image: '${IMAGE}'
+          imagePullPolicy: Always
+          env:
+          - name: LICENSE
+            value: accept
+          - name: HOST_ROLE
+            value: MANAGEMENT
+          - name: DELETE_SHARED_TOP_SUBDIR
+            value: 'Y'
+          - name: CLUSTER_NAME
+            value: '${NAME}'
+          - name: LOGS_ON_SHARED
+            value: 'Y'
+          - name: GENERATE_SSL_CERT
+            value: 'Y'
+          - name: SHARED_TOP_SUBDIR
+            value: '${NAME}'
+          volumeMounts:
+          - name: '${NAME}-master'
+            mountPath: '/shared'
+          ports:
+          - containerPort: 8443
+          - containerPort: 8543
+          - containerPort: 8050
+          - containerPort: 17870
+          - containerPort: 27870
+          - containerPort: 17874
+          - containerPort: 17875
+          - containerPort: 17873
+          - containerPort: 21000
+          - containerPort: 21001
+          - containerPort: 21002
+          - containerPort: 21003
+          resources:
+            requests:
+              cpu: '${CPU_REQ_MASTER}'
+              memory: '${MEMORY_REQ_MASTER}'
+            limits:
+              cpu: '${CPU_LIMIT_MASTER}'
+              memory: '${MEMORY_LIMIT_MASTER}'
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      description: Defines how to deploy the application server
+      template.alpha.openshift.io/wait-for-ready: 'true'
+    name: '${NAME}-compute'
+  spec:
+    replicas: 1
+    selector:
+      name: '${NAME}'
+    strategy:
+      type: Rolling
+    triggers:
+    - type: ConfigChange
+    template:
+      metadata:
+        labels:
+          name: '${NAME}'
+          role: compute
+        name: '${NAME}'
+      spec:
+        volumes:
+        - name: '${NAME}-compute'
+          persistentVolumeClaim:
+            claimName: '${NAME}'
+        containers:
+        - name: '${NAME}-compute'
+          image: '${IMAGE}'
+          imagePullPolicy: Always
+          env:
+          - name: LICENSE
+            value: accept
+          - name: HOST_ROLE
+            value: COMPUTE
+          - name: CLUSTER_NAME
+            value: '${NAME}'
+          - name: LOGS_ON_SHARED
+            value: 'Y'
+          - name: SHARED_TOP_SUBDIR
+            value: '${NAME}'
+          volumeMounts:
+          - name: '${NAME}-compute'
+            mountPath: '/shared'
+          resources:
+            requests:
+              cpu: '${CPU_REQ_COMP}'
+              memory: '${MEMORY_REQ_COMP}'
+            limits:
+              cpu: '${CPU_LIMIT_COMP}'
+              memory: '${MEMORY_LIMIT_COMP}'
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      description: Defines how to deploy the application server
+      template.alpha.openshift.io/wait-for-ready: 'true'
+    name: '${NAME}-client'
+  spec:
+    replicas: 1
+    selector:
+      name: '${NAME}'
+    strategy:
+      type: Rolling
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        from:
+          kind: ImageStreamTag
+          name: ${NAME}-client:latest
+        containerNames:
+        - ${NAME}-client
+    template:
+      metadata:
+        labels:
+          name: '${NAME}'
+          role: client
+        name: '${NAME}'
+      spec:
+        volumes:
+        - name: '${NAME}'
+          persistentVolumeClaim:
+            claimName: '${NAME}'
+        containers:
+        - name: '${NAME}-client'
+          image: '${IMAGE}-client'
+          imagePullPolicy: Always
+          env:
+          - name: LICENSE
+            value: accept
+          - name: HOST_ROLE
+            value: CLIENT
+          - name: CLUSTER_NAME
+            value: '${NAME}'
+          - name: LOGS_ON_SHARED
+            value: 'Y'
+          - name: SHARED_TOP_SUBDIR
+            value: '${NAME}'
+          volumeMounts:
+          - name: '${NAME}'
+            mountPath: '/shared'
+          resources:
+            requests:
+              cpu: '${CPU_REQ_CLN}'
+              memory: '${MEMORY_REQ_CLN}'
+            limits:
+              cpu: '${CPU_LIMIT_CLN}'
+              memory: '${MEMORY_LIMIT_CLN}'
+parameters:
+- description: The name assigned to all of the frontend objects defined in this template.
+  displayName: Name
+  name: NAME
+  required: true
+  value: myapp
+- description: Image name
+  displayName: Image
+  name: IMAGE
+  required: true
+  value: docker.io/ibmcom/spectrum-symphony:7.3.0.0
+- description: GIT repository
+  displayName: Application GIT repository
+  name: GIT_APP_SRC
+  required: true
+  value: ssh://git@github.com/IBMSpectrumComputing/sym-ocp.git
+- description: GIT repository branch
+  displayName: Application GIT repository branch
+  name: GIT_APP_SRC_BRANCH
+  required: true
+  value: master
+- description: Sources path
+  displayName: Application sources path inside GIT repository
+  name: GIT_APP_SRC_PATH
+  required: true
+  value: samples/sampleapp_cpp
+- description: CPU utilization for compute pods auto scaler.
+  displayName: Horizontal Autoscaler CPU Utilization Threshold
+  name: HAS_CPU_UTILIZATON
+  required: true
+  value: '70'
+- description: Maximum amount of CPU the Symphony master container can use.
+  displayName: Master Host CPU Request
+  name: CPU_REQ_MASTER
+  required: true
+  value: '1'
+- description: Maximum amount of memory the Symphony master container can use.
+  displayName: Master Host Memory Request
+  name: MEMORY_REQ_MASTER
+  required: true
+  value: 4Gi
+- description: Maximum amount of CPU the Symphony master container can use.
+  displayName: Master Host CPU Limit
+  name: CPU_LIMIT_MASTER
+  required: true
+  value: '1'
+- description: Maximum amount of memory the Symphony master container can use.
+  displayName: Master Host Memory Limit
+  name: MEMORY_LIMIT_MASTER
+  required: true
+  value: 4Gi
+- description: Maximum amount of CPU the Symphony compute container can use.
+  displayName: Compute Host CPU Request
+  name: CPU_REQ_COMP
+  required: true
+  value: '500m'
+- description: Maximum amount of memory the Symphony compute container can use.
+  displayName: Compute Host Memory Request
+  name: MEMORY_REQ_COMP
+  required: true
+  value: 1Gi
+- description: Maximum amount of CPU the Symphony compute container can use.
+  displayName: Compute Host CPU Limit
+  name: CPU_LIMIT_COMP
+  required: true
+  value: '500m'
+- description: Maximum amount of memory the Symphony compute container can use.
+  displayName: Compute Host Memory Limit
+  name: MEMORY_LIMIT_COMP
+  required: true
+  value: 1Gi
+- description: Maximum amount of CPU the Symphony build container can use.
+  displayName: Build Host CPU Request
+  name: CPU_REQ_BUILD
+  required: true
+  value: '500m'
+- description: Maximum amount of memory the Symphony build container can use.
+  displayName: Build Host Memory Request
+  name: MEMORY_REQ_BUILD
+  required: true
+  value: 1Gi
+- description: Maximum amount of CPU the Symphony build container can use.
+  displayName: Build Host CPU Limit
+  name: CPU_LIMIT_BUILD
+  required: true
+  value: '500m'
+- description: Maximum amount of memory the Symphony build container can use.
+  displayName: Build Host Memory Limit
+  name: MEMORY_LIMIT_BUILD
+  required: true
+  value: 1Gi
+- description: Maximum amount of CPU the Symphony client container can use.
+  displayName: Client Host CPU Request
+  name: CPU_REQ_CLN
+  required: true
+  value: '500m'
+- description: Maximum amount of memory the Symphony client container can use.
+  displayName: Client Host Memory Request
+  name: MEMORY_REQ_CLN
+  required: true
+  value: 1Gi
+- description: Maximum amount of CPU the Symphony client container can use.
+  displayName: Client Host CPU Limit
+  name: CPU_LIMIT_CLN
+  required: true
+  value: '500m'
+- description: Maximum amount of memory the Symphony client container can use.
+  displayName: Client Host Memory Limit
+  name: MEMORY_LIMIT_CLN
+  required: true
+  value: 1Gi

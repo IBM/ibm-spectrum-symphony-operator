@@ -1,0 +1,41 @@
+#!/bin/bash
+
+cd $(dirname $0)
+
+# if egoadmin id is not 1000, update /etc/passwd (user's group must be root)
+if [ "$(id -u)" != "1000" ]; then
+    echo egoadmin id is $(id -u)
+    sed "s|egoadmin:x:1000|egoadmin:x:$(id -u)|g" /etc/passwd > /tmp/passwd
+    cat /tmp/passwd > /etc/passwd
+    rm /tmp/passwd
+fi
+
+# resolve master IP
+cp /shared/${SHARED_TOP_SUBDIR}/kernel/conf/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts
+
+# join the cluster
+sed -i -e "s|EGO_MASTER_LIST=|EGO_MASTER_LIST=master|g" /opt/ibm/spectrumcomputing/kernel/conf/ego.conf
+. /opt/ibm/spectrumcomputing/profile.platform
+
+if [ -z "${CLUSTER_USER}" ]; then
+    CLUSTER_USER=Admin
+fi
+
+if [ -z "${CLUSTER_PASS}" ]; then
+    CLUSTER_PASS=Admin
+fi
+
+echo Deploy new app version
+
+egosh user logon -u ${CLUSTER_USER} -x ${CLUSTER_PASS}
+egosh consumer add /SampleAppCPP -g ComputeHosts,ManagementHosts -u Admin,Guest -e egoadmin
+
+echo Deploy new package version
+soamdeploy add SampleServiceCPP -p SampleServiceCPP.tgz -c /SampleAppCPP -f -u ${CLUSTER_USER} -x ${CLUSTER_PASS} 
+soamreg SampleApp.xml -f -u ${CLUSTER_USER} -x ${CLUSTER_PASS}
+
+echo Submit workload
+while true; do
+    ./AsyncClient
+    sleep 1m
+done
