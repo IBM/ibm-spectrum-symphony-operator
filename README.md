@@ -5,6 +5,8 @@ This repository demonstrates integration of IBM&reg; Spectrum Symphony Community
 IBM&reg; Spectrum Symphony (https://www.ibm.com/us-en/marketplace/analytics-workload-management) is an enterprise-class workload manager for compute- and data-intensive workload on a scalable, shared grid. It provides an efficient computing environment for dozens of distributed parallel applications to deliver faster results and better resource utilization.
 The IBM&reg; Spectrum Symphony Community Edition provides the full functionality of IBM&reg; Spectrum Symphony for a cluster of up to 64 cores.
 
+To deploy IBM&reg; Spectrum Symphony Community Edition cluster you must accept [licensing terms and conditions](https://www.ibm.com/developerworks/community/wikis/home?lang=en#!/wiki/W603320068720_4115_89b9_817244550810/page/Licenses). See ``Installing`` section for the details.
+
 # Prerequisites
 - OpenShift 4.2
 
@@ -36,7 +38,7 @@ oc login
 oc create -f ibm-spectrum-symphony-app-template.yaml
 ```
 * Add new "IBM&reg; Spectrum Symphony Application" (template instance) from the catalog
-* You must enter "accept" value for the LICENSE parameter to accept terms and conditions of IBM Spectrum Symphony CE. See /licences directory on the image for the details.
+* You must enter "accept" value for the LICENSE parameter to accept terms and conditions of IBM&reg; Spectrum Symphony Community Edition.
 
 ## Uninstalling
 
