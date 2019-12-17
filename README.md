@@ -36,6 +36,7 @@ oc login
 oc create -f ibm-spectrum-symphony-app-template.yaml
 ```
 * Add new "IBM&reg; Spectrum Symphony Application" (template instance) from the catalog
+* You must enter "accept" value for the LICENSE parameter to accept terms and conditions of IBM Spectrum Symphony CE. See /licences directory on the image for the details.
 
 ## Uninstalling
 

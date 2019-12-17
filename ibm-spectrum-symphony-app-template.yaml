@@ -150,7 +150,7 @@ objects:
           imagePullPolicy: Always
           env:
           - name: LICENSE
-            value: accept
+            value: '${LICENSE}'
           - name: HOST_ROLE
             value: MANAGEMENT
           - name: DELETE_SHARED_TOP_SUBDIR
@@ -218,7 +218,7 @@ objects:
           imagePullPolicy: Always
           env:
           - name: LICENSE
-            value: accept
+            value: '${LICENSE}'
           - name: HOST_ROLE
             value: COMPUTE
           - name: CLUSTER_NAME
@@ -277,7 +277,7 @@ objects:
           imagePullPolicy: Always
           env:
           - name: LICENSE
-            value: accept
+            value: '${LICENSE}'
           - name: HOST_ROLE
             value: CLIENT
           - name: CLUSTER_NAME
@@ -302,6 +302,11 @@ parameters:
   name: NAME
   required: true
   value: myapp
+- description: You must accept the terms and conditions of IBM Spectrum Symhony CE. See /licenses directory on the image for details.
+  displayName: Accept the license by entering "accept" value.
+  name: LICENSE
+  required: true
+  value: ''
 - description: Image name
   displayName: Image
   name: IMAGE
