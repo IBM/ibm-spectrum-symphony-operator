@@ -11,7 +11,13 @@ if [ "$(id -u)" != "1000" ]; then
 fi
 
 # resolve master IP
-cp /shared/${SHARED_TOP_SUBDIR}/kernel/conf/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts
+if [ -f "/shared/${SHARED_TOP_SUBDIR}/kernel/conf/hosts" ]; then
+    cp /shared/${SHARED_TOP_SUBDIR}/kernel/conf/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts
+fi
+
+if [ -f "/opt/ibm/spectrumcomputing/scripts/configmap/hosts" ]; then
+    cp /opt/ibm/spectrumcomputing/scripts/configmap/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts 
+fi
 
 # join the cluster
 sed -i -e "s|EGO_MASTER_LIST=|EGO_MASTER_LIST=master|g" /opt/ibm/spectrumcomputing/kernel/conf/ego.conf
@@ -38,4 +44,13 @@ echo Submit workload
 while true; do
     ./AsyncClient
     sleep 1m
+
+    # update master IP if changed
+    if [ -f "/shared/${SHARED_TOP_SUBDIR}/kernel/conf/hosts" ]; then
+        cp /shared/${SHARED_TOP_SUBDIR}/kernel/conf/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts
+    fi
+
+    if [ -f "/opt/ibm/spectrumcomputing/scripts/configmap/hosts" ]; then
+        cp /opt/ibm/spectrumcomputing/scripts/configmap/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts 
+    fi
 done

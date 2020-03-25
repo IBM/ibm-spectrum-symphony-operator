@@ -20,7 +20,7 @@ USER root
 
 COPY --from=build-env /opt/app/Output/ /opt/app/
 
-RUN chown -R 1000:0 /opt/app && chmod g=u /opt/app
+RUN chown -R 1000:0 /opt/app && chmod -R g=u /opt/app
 
 USER 1000
 
