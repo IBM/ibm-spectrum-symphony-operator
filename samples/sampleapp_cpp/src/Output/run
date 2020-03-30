@@ -31,6 +31,10 @@ if [ -z "${CLUSTER_PASS}" ]; then
     CLUSTER_PASS=Admin
 fi
 
+if [ -f "/opt/ibm/spectrumcomputing/scripts/users/${CLUSTER_USER}" ]; then
+    CLUSTER_PASS=$(base64 -d /opt/ibm/spectrumcomputing/scripts/users/${CLUSTER_USER}) 
+fi
+
 echo Deploy new app version
 
 egosh user logon -u ${CLUSTER_USER} -x ${CLUSTER_PASS}
