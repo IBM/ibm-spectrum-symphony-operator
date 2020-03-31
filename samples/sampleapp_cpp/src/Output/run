@@ -20,7 +20,7 @@ if [ -f "/opt/ibm/spectrumcomputing/scripts/configmap/hosts" ]; then
 fi
 
 # join the cluster
-sed -i -e "s|EGO_MASTER_LIST=|EGO_MASTER_LIST=master|g" /opt/ibm/spectrumcomputing/kernel/conf/ego.conf
+sed -i -e "s|^EGO_MASTER_LIST=.*|EGO_MASTER_LIST=master|g" /opt/ibm/spectrumcomputing/kernel/conf/ego.conf
 . /opt/ibm/spectrumcomputing/profile.platform
 
 if [ -z "${CLUSTER_USER}" ]; then
