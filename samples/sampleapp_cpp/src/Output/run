@@ -72,7 +72,7 @@ soamreg SampleApp.xml -f -u ${CLUSTER_USER} -x ${CLUSTER_PASS}
 
 echo Submit workload
 while true; do
-    ./AsyncClient ${CLUSTER_USER} -x ${CLUSTER_PASS}
+    ./AsyncClient ${CLUSTER_USER} ${CLUSTER_PASS}
     sleep 1m
 
     refresh_hosts
