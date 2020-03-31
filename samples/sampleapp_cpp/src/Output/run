@@ -25,18 +25,23 @@ function wait_cluster_started
     done
 }
 
+# Opeshift generate UID, need to fix whoami
+function fix_whoami
+{
+    # if egoadmin id is not 1000, update /etc/passwd (user's group must be root)
+    if [ "$(id -u)" != "1000" ]; then
+        echo egoadmin id is $(id -u)
+        sed "s|egoadmin:x:.*|egoadmin:x:$(id -u):0::/home/egoadmin:/bin/bash|g" /etc/passwd > /tmp/passwd
+        cat /tmp/passwd > /etc/passwd
+        rm /tmp/passwd
+    fi
+}
+
 ##################################################################
 
 cd $(dirname $0)
 
-# if egoadmin id is not 1000, update /etc/passwd (user's group must be root)
-if [ "$(id -u)" != "1000" ]; then
-    echo egoadmin id is $(id -u)
-    sed "s|egoadmin:x:1000|egoadmin:x:$(id -u)|g" /etc/passwd > /tmp/passwd
-    cat /tmp/passwd > /etc/passwd
-    rm /tmp/passwd
-fi
-
+fix_whoami
 refresh_hosts
 
 # join the cluster
