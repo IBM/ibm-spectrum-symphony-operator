@@ -21,6 +21,7 @@
 #include "soam.h"
 #include "unistd.h"
 #include <iostream>
+#include <string>
 
 
 using namespace soam;
@@ -40,6 +41,21 @@ int main(int argc, char* argv[])
 {
     try
     {
+        std::string username;
+        std::string password;
+        if(argc > 2) {
+            username = argv[1];
+            password = argv[2];
+        } else {
+            std::cout << "Usage: " << argv[0] << " USERNAME PASSWORD" << std::endl;
+        }
+        if(username.empty()) {
+            username = "Guest";
+        }
+        if(password.empty()) {
+            password = "Guest";
+        }
+
         /********************************************************************
          * We should initialize the API before using any API calls. 
          ********************************************************************/
@@ -52,7 +68,7 @@ int main(int argc, char* argv[])
         // Set up application authentication information using the default
         // security provider. Ensure it exists for the lifetime of the
         // connection. 
-        DefaultSecurityCallback securityCB("Guest", "Guest");
+        DefaultSecurityCallback securityCB(username.c_str(), password.c_str());
 
         // Connect to the specified application. 
         ConnectionPtr conPtr = SoamFactory::connect(appName, &securityCB);
