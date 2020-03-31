@@ -40,14 +40,14 @@ echo Deploy new app version
 # waiting cluster is up
 for I in 1 2 3 4 6 
 do
-    if egosh user logon -u Admin -x Admin; then
+    if egosh user logon -u ${CLUSTER_USER} -x ${CLUSTER_PASS}; then
         break;
     fi
     echo "Waiting cluster to start up $I/6"
     sleep 10s
 done
 
-egosh consumer add /SampleAppCPP -g ComputeHosts,ManagementHosts -u Admin,Guest -e egoadmin
+egosh consumer add /SampleAppCPP -g ComputeHosts,ManagementHosts -u ${CLUSTER_USER} -e egoadmin
 
 echo Deploy new package version
 soamdeploy add SampleServiceCPP -p SampleServiceCPP.tgz -c /SampleAppCPP -f -u ${CLUSTER_USER} -x ${CLUSTER_PASS} 
