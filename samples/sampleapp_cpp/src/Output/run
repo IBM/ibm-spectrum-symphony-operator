@@ -37,7 +37,16 @@ fi
 
 echo Deploy new app version
 
-egosh user logon -u ${CLUSTER_USER} -x ${CLUSTER_PASS}
+# waiting cluster is up
+for I in 1 2 3 4 6 
+do
+    if egosh user logon -u Admin -x Admin; then
+        break;
+    fi
+    echo "Waiting cluster to start up $I/6"
+    sleep 10s
+done
+
 egosh consumer add /SampleAppCPP -g ComputeHosts,ManagementHosts -u Admin,Guest -e egoadmin
 
 echo Deploy new package version
