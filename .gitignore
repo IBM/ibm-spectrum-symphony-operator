@@ -1,0 +1,6 @@
+.cproject
+.project
+.settings
+.DS_Store
+samples/.DS_Store
+samples/sampleapp_cpp/src/.DS_Store

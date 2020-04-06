@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# update master IP if changed
+function refresh_hosts
+{
+    # resolve master IP
+    if [ -f "/opt/ibm/spectrumcomputing/scripts/configmap/hosts" ]; then
+        cp /opt/ibm/spectrumcomputing/scripts/configmap/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts 
+    elif [ -f "/shared/${SHARED_TOP_SUBDIR}/kernel/conf/hosts" ]; then
+        cp /shared/${SHARED_TOP_SUBDIR}/kernel/conf/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts
+    fi
+}
+
+# wait cluster is started
+function wait_cluster_started
+{
+    # waiting cluster is up
+    for I in 1 2 3 4 6 
+    do
+        if egosh user logon -u ${CLUSTER_USER} -x ${CLUSTER_PASS}; then
+            break;
+        fi
+        echo "Waiting cluster to start up $I/6"
+        sleep 10s
+    done
+}
+
+# Opeshift generate UID, need to fix whoami
+function fix_whoami
+{
+    # if egoadmin id is not 1000, update /etc/passwd (user's group must be root)
+    if [ "$(id -u)" != "1000" ]; then
+        echo egoadmin id is $(id -u)
+        sed "s|egoadmin:x:.*|egoadmin:x:$(id -u):0::/home/egoadmin:/bin/bash|g" /etc/passwd > /tmp/passwd
+        cat /tmp/passwd > /etc/passwd
+        rm /tmp/passwd
+    fi
+}
+
+##################################################################
+
+cd $(dirname $0)
+
+fix_whoami
+refresh_hosts
+
+# join the cluster
+sed -i -e "s|^EGO_MASTER_LIST=.*|EGO_MASTER_LIST=master|g" /opt/ibm/spectrumcomputing/kernel/conf/ego.conf
+. /opt/ibm/spectrumcomputing/profile.platform
+
+if [ -z "${CLUSTER_USER}" ]; then
+    CLUSTER_USER=Admin
+fi
+
+if [ -z "${CLUSTER_PASS}" ]; then
+    CLUSTER_PASS=Admin
+fi
+
+if [ -f "/opt/ibm/spectrumcomputing/scripts/users/${CLUSTER_USER}" ]; then
+    CLUSTER_PASS=$(base64 -d /opt/ibm/spectrumcomputing/scripts/users/${CLUSTER_USER}) 
+fi
+
+wait_cluster_started
+
+echo Deploy new app version
+
+egosh consumer add /SampleAppCPP -g ComputeHosts,ManagementHosts -u ${CLUSTER_USER} -e egoadmin
+
+echo Deploy new package version
+soamdeploy add SampleServiceCPP -p SampleServiceCPP.tgz -c /SampleAppCPP -f -u ${CLUSTER_USER} -x ${CLUSTER_PASS} 
+soamreg SampleApp.xml -f -u ${CLUSTER_USER} -x ${CLUSTER_PASS}
+
+echo Submit workload
+while true; do
+    ./AsyncClient ${CLUSTER_USER} ${CLUSTER_PASS}
+    sleep 1m
+
+    refresh_hosts
+done
