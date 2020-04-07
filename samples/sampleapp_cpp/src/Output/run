@@ -15,12 +15,12 @@ function refresh_hosts
 function wait_cluster_started
 {
     # waiting cluster is up
-    for I in 1 2 3 4 6 
+    while true 
     do
         if egosh user logon -u ${CLUSTER_USER} -x ${CLUSTER_PASS}; then
             break;
         fi
-        echo "Waiting cluster to start up $I/6"
+        echo "Waiting cluster to start up"
         sleep 10s
     done
 }
