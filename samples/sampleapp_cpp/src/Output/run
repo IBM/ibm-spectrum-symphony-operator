@@ -21,8 +21,27 @@ function wait_cluster_started
             break;
         fi
         echo "Waiting cluster to start up"
-        sleep 10s
+        sleep 30s
     done
+}
+
+function deploy_app
+{
+    echo Add consumer /SampleAppCPP 
+    egosh consumer add /SampleAppCPP -g ComputeHosts,ManagementHosts -u ${CLUSTER_USER} -e egoadmin
+
+    echo Deploy application new package version
+    while true 
+    do
+        if soamdeploy add SampleServiceCPP -p SampleServiceCPP.tgz -c /SampleAppCPP -f -u ${CLUSTER_USER} -x ${CLUSTER_PASS}; then
+            break;
+        fi
+        echo "Failed to add package to SampleServiceCPP application"
+        sleep 30s
+    done
+    
+    echo Register applcation
+    soamreg SampleApp.xml -f -u ${CLUSTER_USER} -x ${CLUSTER_PASS}
 }
 
 # Opeshift generate UID, need to fix whoami
@@ -61,14 +80,7 @@ if [ -f "/opt/ibm/spectrumcomputing/scripts/users/${CLUSTER_USER}" ]; then
 fi
 
 wait_cluster_started
-
-echo Deploy new app version
-
-egosh consumer add /SampleAppCPP -g ComputeHosts,ManagementHosts -u ${CLUSTER_USER} -e egoadmin
-
-echo Deploy new package version
-soamdeploy add SampleServiceCPP -p SampleServiceCPP.tgz -c /SampleAppCPP -f -u ${CLUSTER_USER} -x ${CLUSTER_PASS} 
-soamreg SampleApp.xml -f -u ${CLUSTER_USER} -x ${CLUSTER_PASS}
+deploy_app
 
 echo Submit workload
 while true; do
