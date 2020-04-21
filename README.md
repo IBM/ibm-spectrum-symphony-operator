@@ -307,6 +307,18 @@ cluster:
   productchargedcontainers: ""
 ```
 
+### Symphony Entitlement
+
+To replace built-in IBM Spectrum Symphony Community Edition entitlement with a commercial one create a secret with entitlement file content and set `cluster.entitlementSecretName=mysym-entitlement` parameter. Note accepting terms and conditions of the IBM Spectrum Symphony will be applied to the new commercial licence. You can find more inforamtion about IBM Spectrum Symphony licences from the [Licence Information](https://www-03.ibm.com/software/sla/sladb.nsf/searchlis/?searchview&searchorder=4&searchmax=0&query=(Spectrum+Symphony+7.3)) link in the operator description.
+
+Here is an example how to create the entitlement secret:
+
+```bash
+$ cp sym_adv_entitlement.dat entitlement
+$ oc create secret generic mysym-entitlement --from-file=entitlement
+$ rm entitlement
+```
+
 ### Users Passwords
 
 You could change IBM Spectrum Symphony user`s passwords by providing a Kubernetes secret as cluster.usersPasswordsSecretName parameter. The secret will be mounted on master and client hosts at /opt/ibm/spectrumcomputing/scripts/users directory, each user as a separate filename. Your script could decode the password and use it to submit the workload.
@@ -355,7 +367,7 @@ AdminNewPass
 
 ### External scripts
 
-External scripts feature allows to reconfigure the Symphony cluster and or replace binaries. It's necessary to prepare bash scripts with certain names. Scripts with MANAGEMENT name will be executed on the master host, scripts with name COMPUTE will be executed on computed hosts. Scripts with name `pre` will be executed before cluster configuration and `post` will be executed afte the cluster was started. The scripts archive will be mounted, extracted and executed from /tmp/scripts directory.
+External scripts feature allows to reconfigure the Symphony cluster and or replace binaries. It's necessary to prepare bash scripts with certain names. Scripts with MANAGEMENT name will be executed on the master host, scripts with name COMPUTE will be executed on computed hosts. Scripts with name `pre` will be executed before Symphony cluster starts and `post` will be executed after the Symphony cluster was started. The scripts archive will be mounted, extracted and executed from /tmp/scripts directory.
 
 Here are scripts names must be used, make sure they have execute permision:
 
@@ -404,7 +416,7 @@ Volumes are removed from CSV example.
 
 Client script on the image must take care of resolving master host and deploy the application.
 Master host IP address is mounted to ``/opt/ibm/spectrumcomputing/scripts/configmap/hosts`` and could be updated if changed.
-Make sure the scrip waits until the IP address is known and copies it to EGO hosts file:
+Make sure the script waits until the IP address is known and copies it to EGO hosts file:
 
 ```bash
 $cp /opt/ibm/spectrumcomputing/scripts/configmap/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts
