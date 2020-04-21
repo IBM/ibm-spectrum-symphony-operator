@@ -1,6 +1,6 @@
 # IBM Spectrum Symphony OpenShift Operator
 
-IBM Spectrum Symphony OpenShift operator allows you to deploy IBM Spectrum Symphony (https://www.ibm.com/ca-en/marketplace/analytics-workload-management) cluster with either a fixed number of compute nodes or number of relicas controlled by a Horisontal Pod Autoscaler with a CPU threshold. Provided SymphonyCluster API allows to create client pods to submit Symphony workload either using pre-built docker images or build images using OpenShift BuildConfig Dockerfile build from GitHub sources.
+IBM Spectrum Symphony OpenShift operator allows you to deploy IBM Spectrum Symphony <https://www.ibm.com/ca-en/marketplace/analytics-workload-management> cluster with either a fixed number of compute nodes or number of relicas controlled by a Horisontal Pod Autoscaler with a CPU threshold. Provided SymphonyCluster API allows to create client pods to submit Symphony workload either using pre-built docker images or build images using OpenShift BuildConfig Dockerfile build from GitHub sources.
 
 The current operator version has the following limitations:
 
@@ -32,11 +32,11 @@ All spec parameters except `licenceAccepted` (must be `true`) are optional. Defa
 
 In addition to single master pod and compute pods, user can define list of client applications (pods) to submit IBM Spectrum Symphony workload.
 
-Here is IBM Spectrum Symphony C++ sample application source code, which is built by the operator to a client image to submit the workload: https://github.com/IBM/ibm-spectrum-symphony-operator/tree/master/samples/sampleapp_cpp
+Here is IBM Spectrum Symphony C++ sample application source code, which is built by the operator to a client image to submit the workload: <https://github.com/IBM/ibm-spectrum-symphony-operator/tree/master/samples/sampleapp_cpp>
 
 Here is the list of SymphonyCluster children objects created by operator:
 
-- ServiceAccount for running master and compute pods. 
+- ServiceAccount for running master and compute pods.
 Optional, user can use existing ServiceAccount with additional permissions and secrets.
 
 - Volume claim to store cluster configuration for HA.
@@ -70,7 +70,7 @@ Optional, created after master pod IP address is known.
 - ImageStream for client application.
 Optional, if BuildConfig is used to build client application image.
 
-## Images
+### Images
 
 The operator image is stored in two repositories:
 
@@ -86,8 +86,60 @@ Operator definition (ClusterServiceVersion) uses three images for master, comput
 
 - docker.io/ibmcom/spectrum-symphony-client:7.3.0.0
 
+### Environment variables required by images entrypoint scripts
 
-## Docker image liveness and readiness probes
+- Common (all pods)
+
+```bash
+LICENSE=accept
+```
+
+Must be set to accept terms and conditions, otherwise the bootstrap script will exit.
+
+```bash
+SHARED_TOP_SUBDIR=""
+```
+
+If `cluster.logsOnShared=true` this env is set to release name and creates subdirectory in the /shared.
+
+```bash
+LOGS_ON_SHARED="Y"
+```
+
+Asks master and compute to change local configuration files to save logs on the shared directory /shared/${SHARED_TOP_SUBDIR}/logs
+
+- Master
+
+```bash
+HOST_ROLE=MANAGEMENT
+```
+
+```bash
+GENERATE_SSL_CERT="Y"
+```
+
+Regenerate built-in certificate for SSL communication. It's a self-signed certificate.
+
+```bash
+CLUSTER_NAME=""
+```
+
+Comes from `cluster.clusterName` or release name. Sets Symphony internal cluster name.
+
+- Compute
+
+```bash
+HOST_ROLE=COMPUTE
+```
+
+- Client
+
+```bash
+HOST_ROLE=CLIENT
+```
+
+### Docker image liveness and readiness probes
+
 Master and compute pods have liviness and rediness probes to check LIM (EGO component) process IP port.
 
 Bash built-in virtual file system `/dev/PROTOCOL/HOST/PORT` is used to poll the port.
@@ -222,7 +274,8 @@ spec:
 
 ``serviceAccountName`` parameter allows you to use existing ServiceAccount with extra Roles and/or Secrets.
 
-## Cluster
+## Cluster parameters
+
 Cluster parameters define IBM Spectrum Symphony cluster specific configuration
 
 ```yaml
@@ -248,6 +301,7 @@ cluster:
 ```
 
 ### Product annotations
+
 Below are product annotation fields for OpenShift metric system. If `cluster.entitlementSecretName` is set, the defaults will be changed to Advanced Edition values. Those fields are not presented in the example and hidden from CSV because software charge is calculated using those fields, still they are configurable for flexibility.
 
 ```yaml
@@ -259,64 +313,14 @@ cluster:
   productchargedcontainers: ""
 ```
 
-## Environment variables
-
-- Common (all pods)
-
-```bash
-LICENSE=accept
-```
-
-Must be set to accept terms and conditions, otherwise the bootstrap script will exit.
-
-```bash
-SHARED_TOP_SUBDIR=""
-```
-
-If `cluster.logsOnShared=true` this env is set to release name and creates subdirectory in the /shared.
-
-```bash
-LOGS_ON_SHARED="Y"
-```
-
-Asks master and compute to change local configuration files to save logs on the shared directory /shared/${SHARED_TOP_SUBDIR}/logs
-
-- Master
-
-```bash
-HOST_ROLE=MANAGEMENT
-```
-
-```bash
-GENERATE_SSL_CERT="Y"
-```
-
-Regenerate built-in certificate for SSL communication. It's a self-signed certificate.
-
-```bash
-CLUSTER_NAME=""
-```
-
-Comes from `cluster.clusterName` or release name. Sets Symphony internal cluster name.
-
-- Compute
-
-```bash
-HOST_ROLE=COMPUTE
-```
-
-- Client
-
-```bash
-HOST_ROLE=CLIENT
-```
-
 ### Users Passwords
+
 You could change IBM Spectrum Symphony user`s passwords by providing a Kubernetes secret as cluster.usersPasswordsSecretName parameter. The secret will be mounted on master and client hosts at /opt/ibm/spectrumcomputing/scripts/users directory, each user as a separate filename. Your script could decode the password and use it to submit the workload.
 
 Example:
 
 - Encode passwords
+
 ```bash
 $ echo AdminNewPass | base64
 QWRtaW5OZXdQYXNzCg==
@@ -325,6 +329,7 @@ VXNlcjFOZXdQYXNzCg==
 ```
 
 - Create secret in OpenShift UI with encoded values (here is the values with salt)
+
 ```yaml
 kind: Secret
 apiVersion: v1
@@ -344,6 +349,7 @@ cluster:
 ```
 
 - The files are mounted and could be decoded:
+
 ```bash
 $ ls -l /opt/ibm/spectrumcomputing/scripts/users/
 total 0
@@ -354,6 +360,7 @@ AdminNewPass
 ```
 
 ## Volumes
+
 Master, compute and client pods could mount existing PVC to exchange data.
 Note you can mount the same PVC in the container only once.
 Volumes are removed from CSV example.
@@ -383,7 +390,7 @@ Master host IP address is mounted to ``/opt/ibm/spectrumcomputing/scripts/config
 Make sure the scrip waits until the IP address is known and copies it to EGO hosts file:
 
 ```bash
-$cp /opt/ibm/spectrumcomputing/scripts/configmap/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts 
+$cp /opt/ibm/spectrumcomputing/scripts/configmap/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts
 ```
 
 ### Using prebuild client image to submit workload
@@ -392,7 +399,7 @@ Client image could be built outside of OCP and provided to client.Image paramete
 In this case no build objects will be created, only DeploimentConfig to submit workload
 Here is an example how to build the sample:
 
-- Get sources: https://github.com/IBM/ibm-spectrum-symphony-operator/tree/master/samples/sampleapp_cpp
+- Get sources: <https://github.com/IBM/ibm-spectrum-symphony-operator/tree/master/samples/sampleapp_cpp>
 
 - Create your public repository: quay.io/ibm-spectrum-symphony/sampleapp_cpp
 
@@ -411,4 +418,3 @@ $docker push quay.io/ibm-spectrum-symphony/sampleapp_cpp:latest
     - name: SampleAppCPP1
       image: quay.io/ibm-spectrum-symphony/sampleapp_cpp:latest
 ```
-
