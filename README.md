@@ -78,13 +78,7 @@ The operator image is stored in two repositories:
 
 - registry.connect.redhat.com/ibm/spectrum-symphony-operator:v1
 
-Operator definition (ClusterServiceVersion) uses three images for master, compute nodes and client (actually build image). Each image contains two architectures: amd64 and ppc64le and based on RedHat UBI 7 minimal image.
-
-- docker.io/ibmcom/spectrum-symphony:7.3.0.0
-
-- docker.io/ibmcom/spectrum-symphony-comp:7.3.0.0
-
-- docker.io/ibmcom/spectrum-symphony-client:7.3.0.0
+IBM Spectrum Symphony docker image (docker.io/ibmcom/spectrum-symphony:7.3.0.0) could be used for master, compute and client (actually build) containers. The image contains two architectures: amd64 and ppc64le and based on RedHat UBI 7 minimal image.
 
 ### Environment variables required by images entrypoint scripts
 
