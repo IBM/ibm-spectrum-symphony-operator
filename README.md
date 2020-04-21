@@ -353,6 +353,35 @@ $ cat /opt/ibm/spectrumcomputing/scripts/users/Admin | base64 -d
 AdminNewPass
 ```
 
+### External scripts
+
+External scripts feature allows to reconfigure the Symphony cluster and or replace binaries. It's necessary to prepare bash scripts with certain names. Scripts with MANAGEMENT name will be executed on the master host, scripts with name COMPUTE will be executed on computed hosts. Scripts with name `pre` will be executed before cluster configuration and `post` will be executed afte the cluster was started. The scripts archive will be mounted, extracted and executed from /tmp/scripts directory.
+
+Here are scripts names must be used, make sure they have execute permision:
+
+```bash
+$ ls -l
+total 32
+-rwxr-xr--  1 egoadmin  root  32 21 Apr 10:32 COMPUTE_post_start.sh
+-rwxr-xr--  1 egoadmin  root  32 21 Apr 10:32 COMPUTE_pre_start.sh
+-rwxr-xr--  1 egoadmin  root  32 21 Apr 10:32 MANAGEMENT_post_start.sh
+-rwxr-xr--  1 egoadmin  root  32 21 Apr 10:31 MANAGEMENT_pre_start.sh
+```
+
+Prepare archive `scripts.tar.gz` (must use this name) with the scripts and any other files:
+
+```bash
+$ tar czf scripts.tar.gz *
+```
+
+Create Kubernetes secret from the archive:
+
+```bash
+$ oc create secret generic my-scripts --from-file=scripts.tar.gz
+```
+
+Use the secret when you create SymphonyCluster: `cluster.scriptsSecretName='my-scripts'`. You will see in container logs the scripts were executed.
+
 ## Volumes
 
 Master, compute and client pods could mount existing PVC to exchange data.
@@ -370,12 +399,6 @@ Volumes are removed from CSV example.
       mount: "/symPVC2"
       readOnly: false
 ```
-
-## Master
-
-## Compute
-
-## Client
 
 ### Considerations for client script
 
