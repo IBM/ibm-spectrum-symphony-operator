@@ -70,7 +70,7 @@ Optional, if BuildConfig is used to build client application image.
 
 In addition to single master pod and compute depolyment (which controls compute pods), user can define list of client applications (pods) to Symphony workload. Here is IBM Spectrum Symphony C++ sample application source code, which is built by the operator to a client image to submit the workload: <https://github.com/IBM/ibm-spectrum-symphony-operator/tree/master/samples/sampleapp_cpp>.
 
-SymphonyCluster status consist of the master host IP address. When it's changed (master pod was restarted) the ConfigMap is updated and all pods will get the new IP updated. Compute nodes entrypoint script (bootstrap.sh) monitors the ConfigMap file changes and update EGO hosts file, that make IBM Spectrum Symphony software to be able to resolve master host. Client images must implement the same functionality, here is an implementation example: <https://github.com/IBM/ibm-spectrum-symphony-operator/blob/master/samples/sampleapp_cpp/src/Output/run>.
+SymphonyCluster `status` consist of the master host IP address. When it's changed (master pod was restarted) the ConfigMap is updated and all pods will get the new IP in the mounted file. Compute nodes entrypoint script (bootstrap.sh) monitors the ConfigMap file changes and update EGO hosts file, that make IBM Spectrum Symphony software to be able to resolve master host. Client images must implement the same functionality, here is an implementation example: <https://github.com/IBM/ibm-spectrum-symphony-operator/blob/master/samples/sampleapp_cpp/src/Output/run>.
 
 ### Images
 
@@ -88,7 +88,7 @@ Bash built-in virtual file system `/dev/PROTOCOL/HOST/PORT` is used to poll the 
 The following command returns 0 (no error) if local TCP port 17869 is in listening state.
 
 ```bash
-$bash </dev/tcp/localhost/17869
+$ bash </dev/tcp/localhost/17869
 ```
 
 ## SymphonyCluster API
@@ -236,6 +236,7 @@ Here is an example how to create the entitlement secret:
 ```bash
 $ cp sym_adv_entitlement.dat entitlement
 $ oc create secret generic mysym-entitlement --from-file=entitlement
+secret/mysym-entitlement created
 $ rm entitlement
 ```
 
@@ -310,6 +311,7 @@ Create Kubernetes secret from the archive:
 
 ```bash
 $ oc create secret generic my-scripts --from-file=scripts.tar.gz
+secret/my-scripts created
 ```
 
 Use the secret when you create SymphonyCluster: `cluster.scriptsSecretName='my-scripts'`. You will see in container logs the scripts were executed.
@@ -339,14 +341,14 @@ Master host IP address is mounted to ``/opt/ibm/spectrumcomputing/scripts/config
 Make sure the script waits until the IP address is known and copies it to EGO hosts file:
 
 ```bash
-$cp /opt/ibm/spectrumcomputing/scripts/configmap/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts
+$ cp /opt/ibm/spectrumcomputing/scripts/configmap/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts
 ```
 
 ### Using prebuild client image to submit workload
 
-Client image could be built outside of OCP and provided to client.Image parameter.
-In this case no build objects will be created, only DeploimentConfig to submit workload
-Here is an example how to build the sample:
+Client image could be built outside of OCP and provided to client.Image parameter. In this case no build objects will be created, only DeploimentConfig to submit workload.
+
+Here is an example how to pre-build IBM Spectrum Symphony C++ sample application image:
 
 - Get sources: <https://github.com/IBM/ibm-spectrum-symphony-operator/tree/master/samples/sampleapp_cpp>
 
@@ -355,9 +357,9 @@ Here is an example how to build the sample:
 - Build and push image
 
 ```bash
-$cd sym-ocp/samples/sampleapp_cpp
-$docker build -t quay.io/ibm-spectrum-symphony/sampleapp_cpp:latest .
-$docker push quay.io/ibm-spectrum-symphony/sampleapp_cpp:latest
+$ cd sym-ocp/samples/sampleapp_cpp
+$ docker build -t quay.io/ibm-spectrum-symphony/sampleapp_cpp:latest .
+$ docker push quay.io/ibm-spectrum-symphony/sampleapp_cpp:latest
 ```
 
 - Use the new image for your client:
