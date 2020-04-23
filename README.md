@@ -32,7 +32,7 @@ All spec parameters except `licenceAccepted` (must be `true`) are optional. Defa
 
 ### SymphonyCluster children objects
 
-Here is the list of SymphonyCluster children objects created by operator. Wneh created, uses release name of SymphonyCluster, adds `-master`, `-compute` or other suffixes for bette naming.
+Here is the list of SymphonyCluster children objects created by operator. When created, uses release name of SymphonyCluster, adds `-master`, `-compute` or other suffixes for bette naming.
 
 - `ServiceAccount` for running master and compute pods.
 Optional, user can use existing ServiceAccount with additional permissions and secrets.
