@@ -64,7 +64,16 @@ fix_whoami
 refresh_hosts
 
 # join the cluster
-sed -i -e "s|^EGO_MASTER_LIST=.*|EGO_MASTER_LIST=master|g" /opt/ibm/spectrumcomputing/kernel/conf/ego.conf
+if [ -f "/shared/${SHARED_TOP_SUBDIR}/kernel/conf/ego.conf" ]; then
+    cp /shared/${SHARED_TOP_SUBDIR}/kernel/conf/ego.conf /opt/ibm/spectrumcomputing/kernel/conf/ego.conf
+else
+    # starting operator v1.1.0 the primary hostname is primary, not master
+    PRIMARY_HOSTNAME=$(grep primary /opt/ibm/spectrumcomputing/kernel/conf/hosts)
+    if [ -z "${PRIMARY_HOSTNAME}" ]; then
+        PRIMARY_HOSTNAME=$(grep master /opt/ibm/spectrumcomputing/kernel/conf/hosts)
+    fi
+    sed -i -e "s|^EGO_MASTER_LIST=.*|EGO_MASTER_LIST=${PRIMARY_HOSTNAME}|g" /opt/ibm/spectrumcomputing/kernel/conf/ego.conf
+fi
 . /opt/ibm/spectrumcomputing/profile.platform
 
 if [ -z "${CLUSTER_USER}" ]; then

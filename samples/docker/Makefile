@@ -52,7 +52,7 @@ prepare: kill
 
 start_node:
 	@echo Starting ${ROLE}
-	@docker run -d ${DOCKER_ARGS} ${HOSTN} -e HOST_ROLE=${ROLE} -l role=${ROLE} ${SYM_IMAGE}
+	@docker run -P -d ${DOCKER_ARGS} ${HOSTN} -e HOST_ROLE=${ROLE} -l role=${ROLE} ${SYM_IMAGE}
 
 scripts:
 	@cd scripts; tar czf ../${SCRIPTS} *
