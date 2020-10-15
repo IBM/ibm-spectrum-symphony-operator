@@ -198,6 +198,7 @@ spec:
     uiEnabled: true                                             # If enabled, adds WEBGUI port to Service and creates Route
     egoRestEnabled: false                                       # If enabled, adds EGO REST API port to Service and creates Route
     symRestEnabled: false                                       # If enabled, adds SYM REST API port to Service and creates Route
+    replicaCount: 0                                             # v1.1.0: Initial number of extra management pods replicas
     resources:                                                  # Resources allocated for master pod, note 4G is minimum for Symphony management host
       requests:
         cpu: "1000m"
