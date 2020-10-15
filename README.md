@@ -1,5 +1,24 @@
 # IBM Spectrum Symphony OpenShift Operator
 
+## Table of Contents
+1. [Symphony OpenShift Operator](#operator)
+2. [Changelog](#changelog)
+3. [Operator architecture](#architecture)
+    - [SymphonyCluster children objects](#children)
+    - [Containers environment variables](#env)
+4. [SymphonyCluster API](#api)
+    - [Product annotations](#product)
+    - [Symphony Entitlement](#entitlement)
+    - [Users Passwords](#passwords)
+    - [External scripts](#scripts)
+    - [Volumes](#volumes)
+    - [Considerations for client script](#clnscripts)
+    - [Using prebuild client image to submit workload](#clnprebuild)
+5. [Miscellaneous](#miscellaneous)
+    - [Using ImageStreams](#imagestreams)
+
+## Symphony OpenShift Operator <a name="operator"></a>
+
 IBM Spectrum Symphony OpenShift operator allows you to deploy IBM Spectrum Symphony <https://www.ibm.com/ca-en/marketplace/analytics-workload-management> cluster with either a fixed number of compute nodes or number of relicas controlled by a Horisontal Pod Autoscaler with a CPU threshold. Provided SymphonyCluster API allows to create client pods to submit Symphony workload either using pre-built docker images or build images using OpenShift BuildConfig Dockerfile build from GitHub sources.
 
 The current operator version has the following limitations:
@@ -24,13 +43,27 @@ Compute and client pods could mount existing Kubernetes volume claims to exchang
 
 All created Kubernetes objects are properly labeled and annotated to use for monitoring, metering and audit.
 
-## Operator architecture
+## Changelog <a name="changelog"></a>
+
+- Version 1.1.0 (November 2020) has the following improvements and bugfixes:
+  - IBM Spectrum Symphony version 7.3.1
+  - Added Deploment for extra management hosts (default is zero pods)
+  - Smaller image for compute hosts
+  - No samples on the compute image, use the namagement image for the build
+  - Operator sets environment variables to containers to help with scripting
+  - Renaming objects, replacing master with primary
+  - The primary namagement hostname changed from master to primary
+  - Bugfix: operator missed primary management pod monitoring, fixes the cluster recovery if pod is killed
+  - Bugfix: build used client's service account
+  - Bugfix: client used array of environment variables from master parameter
+
+## Operator architecture <a name="architecture"></a>
 
 When SymphonyCluster is created the operator creates and monitors children objects. If some objects were deleted, operator will recreate them. Note spec parameters changing (patch) is not supported, create a new SymphonyCluster object if necessary.
 
 All spec parameters except `licenceAccepted` (must be `true`) are optional. Default values will be used for some parameters (see description below).
 
-### SymphonyCluster children objects
+### SymphonyCluster children objects <a name="children"></a>
 
 Here is the list of SymphonyCluster children objects created by operator. When created, uses release name of SymphonyCluster, adds `-master`, `-compute` or other suffixes for bette naming.
 
@@ -72,7 +105,39 @@ In addition to single master pod and compute depolyment (which controls compute 
 
 SymphonyCluster `status` consist of the master host IP address. When it's changed (master pod was restarted) the ConfigMap is updated and all pods will get the new IP in the mounted file. Compute nodes entrypoint script (bootstrap.sh) monitors the ConfigMap file changes and update EGO hosts file, that make IBM Spectrum Symphony software to be able to resolve master host. Client images must implement the same functionality, here is an implementation example: <https://github.com/IBM/ibm-spectrum-symphony-operator/blob/master/samples/sampleapp_cpp/src/Output/run>.
 
-### Images
+### Containers environment variables <a name="env"></a>
+
+Starting version 1.1.0 Symphony OpenShift operator sets the following environment variables to containers:
+
+Information about the Symphony Cluster Kubernetes object:
+```
+SOAM_OPENSHIFT_RELEASE_APIVERSION=symphony.spectrumcomputing.ibm.com/v1
+SOAM_OPENSHIFT_RELEASE_KIND=SymphonyCluster
+SOAM_OPENSHIFT_RELEASE_NAME=symcluster
+SOAM_OPENSHIFT_NAMESPACE=default
+```
+
+Client image:
+```
+SOAM_OPENSHIFT_COMPUTE_IMAGE=docker.io/ibmcom/spectrum-symphony:7.3.0.0
+```
+
+Information used in the metering system (set as annotation):
+```
+SOAM_OPENSHIFT_PRODUCT_CHARGE=All
+SOAM_OPENSHIFT_PRODUCT_ID=28826cfd6dcd4beebca2cb2d9ef0ffe4
+SOAM_OPENSHIFT_PRODUCT_METRIC=VIRTUAL_PROCESSOR_CORE
+SOAM_OPENSHIFT_PRODUCT_NAME=IBM Spectrum Symphony
+SOAM_OPENSHIFT_PRODUCT_VERSION=7.3.0.0
+```
+
+Name of the PersistentVolumeClaim used for the shared directory and ServiceAccount used for this pod:
+```
+SOAM_OPENSHIFT_PVC=pvctest
+SOAM_OPENSHIFT_SERVICEACCOUNT=default
+```
+
+### Images <a name="images"></a>
 
 The operator image is stored in two repositories:
 
@@ -91,7 +156,7 @@ The following command returns 0 (no error) if local TCP port 17869 is in listeni
 $ bash </dev/tcp/localhost/17869
 ```
 
-## SymphonyCluster API
+## SymphonyCluster API <a name="api"></a>
 
 IBM Spectrum Symphony OpenShift operator provides and manages SymphonyCluster object:
 
@@ -214,7 +279,7 @@ spec:
         readOnly: true
 ```
 
-### Product annotations
+### Product annotations <a name="product"></a>
 
 Below are product annotation fields for OpenShift metric system. If `cluster.entitlementSecretName` is set, the defaults will be changed to Advanced Edition values. Those fields are not presented in the example and hidden from CSV because software charge is calculated using those fields, still they are configurable for flexibility.
 
@@ -227,7 +292,7 @@ cluster:
   productchargedcontainers: ""
 ```
 
-### Symphony Entitlement
+### Symphony Entitlement <a name="entitlement"></a>
 
 To replace built-in IBM Spectrum Symphony Community Edition entitlement with a commercial one create a secret with entitlement file content and set `cluster.entitlementSecretName=mysym-entitlement` parameter. Note accepting terms and conditions of the IBM Spectrum Symphony will be applied to the new commercial licence. You can find more inforamtion about IBM Spectrum Symphony licences from the [Licence Information](https://www-03.ibm.com/software/sla/sladb.nsf/searchlis/?searchview&searchorder=4&searchmax=0&query=(Spectrum+Symphony+7.3)) link in the operator description.
 
@@ -240,7 +305,7 @@ secret/mysym-entitlement created
 $ rm entitlement
 ```
 
-### Users Passwords
+### Users Passwords <a name="passwords"></a>
 
 You could change IBM Spectrum Symphony user`s passwords by providing a Kubernetes secret as cluster.usersPasswordsSecretName parameter. The secret will be mounted on master and client hosts at /opt/ibm/spectrumcomputing/scripts/users directory, each user as a separate filename. Your script could decode the password and use it to submit the workload.
 
@@ -286,7 +351,7 @@ $ cat /opt/ibm/spectrumcomputing/scripts/users/Admin | base64 -d
 AdminNewPass
 ```
 
-### External scripts
+### External scripts <a name="scripts"></a>
 
 External scripts feature allows to reconfigure the Symphony cluster and or replace binaries. It's necessary to prepare bash scripts with certain names. Scripts with MANAGEMENT name will be executed on the master host, scripts with name COMPUTE will be executed on computed hosts. Scripts with name `pre` will be executed before Symphony cluster starts and `post` will be executed after the Symphony cluster was started. The scripts archive will be mounted, extracted and executed from /tmp/scripts directory.
 
@@ -316,7 +381,7 @@ secret/my-scripts created
 
 Use the secret when you create SymphonyCluster: `cluster.scriptsSecretName='my-scripts'`. You will see in container logs the scripts were executed.
 
-### Volumes
+### Volumes <a name="volumes"></a>
 
 Master, compute and client pods could mount existing PVC to exchange data.
 Note you can mount the same PVC in the container only once.
@@ -334,7 +399,7 @@ Volumes are removed from CSV example.
       readOnly: false
 ```
 
-### Considerations for client script
+### Considerations for client script <a name="clnscripts"></a>
 
 Client script on the image must take care of resolving master host and deploy the application.
 Master host IP address is mounted to ``/opt/ibm/spectrumcomputing/scripts/configmap/hosts`` and could be updated if changed.
@@ -344,7 +409,7 @@ Make sure the script waits until the IP address is known and copies it to EGO ho
 $ cp /opt/ibm/spectrumcomputing/scripts/configmap/hosts /opt/ibm/spectrumcomputing/kernel/conf/hosts
 ```
 
-### Using prebuild client image to submit workload
+### Using prebuild client image to submit workload <a name="clnprebuild"></a>
 
 Client image could be built outside of OCP and provided to client.Image parameter. In this case no build objects will be created, only DeploimentConfig to submit workload.
 
@@ -368,4 +433,35 @@ $ docker push quay.io/ibm-spectrum-symphony/sampleapp_cpp:latest
   client:
     - name: SampleAppCPP1
       image: quay.io/ibm-spectrum-symphony/sampleapp_cpp:latest
+```
+
+## Miscellaneous <a name="miscellaneous"></a>
+
+Here is just some miscellaneous and best practicies information.
+
+### Using ImageStreams <a name="imagestreams"></a>
+
+If pulling symphony images from external repository is slow you can setup internal ImageStream object to reference to the external repository, but it will be cached inside your OpenShift cluster. Then you can use ImageStream name duering your cluster creation.
+
+For example instead of using 
+```master.image=very-slow-repository.com/spectrum-symphony:7.3.1.0```, create ImageStream ```spectrum-symphony``` (see the yaml below) and use it: ```master.image=spectrum-symphony:7.3.1.0```
+
+```yaml
+kind: ImageStream
+apiVersion: image.openshift.io/v1
+metadata:
+  name: spectrum-symphony
+spec:
+  lookupPolicy:
+    local: true
+  tags:
+    - name: 7.3.1.0
+      from:
+        kind: DockerImage
+        name: >-
+          very-slow-repository.com/spectrum-symphony:7.3.1.0
+      importPolicy:
+        scheduled: true
+      referencePolicy:
+        type: Local
 ```
