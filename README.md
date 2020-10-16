@@ -53,6 +53,7 @@ All created Kubernetes objects are properly labeled and annotated to use for mon
   - Operator sets environment variables to containers to help with scripting
   - Renaming objects, replacing master with primary
   - The primary namagement hostname changed from master to primary
+  - New option (cluster.cacheImages) to use local repository for management and compute pods
   - Bugfix: operator missed primary management pod monitoring, fixes the cluster recovery if pod is killed
   - Bugfix: build used client's service account
   - Bugfix: client used array of environment variables from master parameter
@@ -185,6 +186,7 @@ spec:
     productversion: "7.3.0.0"                                   # Annotation for metric system, changed if custome entitlement is set
     productmetric: "VIRTUAL_PROCESSOR_CORE"                     # Annotation for metric system, changed if custome entitlement is set
     productchargedcontainers: ""                                # Annotation for metric system, changed if custome entitlement is set
+    cacheImages: false                                          # Creates local ImageStrems to use for management and compute pods
     storage:
       pvcName: ""                                               # Use custom volume claim name, if empty creates one
       pvcSize: "1Gi"                                            # Size of volume claim to create
@@ -442,7 +444,7 @@ Here is just some miscellaneous and best practicies information.
 
 ### Using ImageStreams <a name="imagestreams"></a>
 
-If pulling symphony images from external repository is slow you can setup internal ImageStream object to reference to the external repository, but it will be cached inside your OpenShift cluster. Then you can use ImageStream name duering your cluster creation.
+(v1.0.0) If pulling symphony images from external repository is slow you can setup internal ImageStream object to reference to the external repository, but it will be cached inside your OpenShift cluster. Then you can use ImageStream name duering your cluster creation.
 
 For example instead of using 
 ```master.image=very-slow-repository.com/spectrum-symphony:7.3.1.0```, create ImageStream ```spectrum-symphony``` (see the yaml below) and use it: ```master.image=spectrum-symphony:7.3.1.0```
@@ -466,3 +468,5 @@ spec:
       referencePolicy:
         type: Local
 ```
+
+Starting version 1.1.0 there is a new option cluster.cacheImages=true (deafult is false) which will automatically create ImageStreams for management and compute nodes.
