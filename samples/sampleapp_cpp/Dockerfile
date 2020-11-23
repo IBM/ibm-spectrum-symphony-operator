@@ -2,7 +2,7 @@
 # BuildConfig Docker strategy for Symphony SmapleApp C++ example
 #
 
-FROM docker.io/ibmcom/spectrum-symphony:7.3.0.0 AS build-env
+FROM docker.io/ibmcom/spectrum-symphony:7.3.1.0 AS build-env
 USER root
 
 RUN microdnf install --nodocs gcc-c++ 
@@ -13,7 +13,7 @@ RUN \
        . /opt/ibm/spectrumcomputing/profile.platform \
     && make -C /opt/app all
 
-FROM docker.io/ibmcom/spectrum-symphony:7.3.0.0 AS run-env
+FROM docker.io/ibmcom/spectrum-symphony:7.3.1.0 AS run-env
 USER root
 
 COPY --from=build-env /opt/app/Output/ /opt/app/

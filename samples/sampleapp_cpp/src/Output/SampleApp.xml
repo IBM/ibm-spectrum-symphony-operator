@@ -5,7 +5,7 @@
               taskHighWaterMark="1.0" taskLowWaterMark="1.0"
               preStartApplication="false" numOfSlotsForPreloadedServices="1"/>
 
-    <SOAM version="7.3">
+    <SOAM>
         <SSM resReq="" workDir="${EGO_SHARED_TOP}/soam/work">
     	     <boundaryManagerConfig>
                 <boundaries>
