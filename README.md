@@ -10,6 +10,7 @@
     - [Product annotations](#product)
     - [Symphony Entitlement](#entitlement)
     - [Users Passwords](#passwords)
+    - [Admin Password](#adminpasswd)
     - [External scripts](#scripts)
     - [Volumes](#volumes)
     - [Considerations for client script](#clnscripts)
@@ -57,6 +58,9 @@ All created Kubernetes objects are properly labeled and annotated to use for mon
   - Bugfix: operator missed primary management pod monitoring, fixes the cluster recovery if pod is killed
   - Bugfix: build used client's service account
   - Bugfix: client used array of environment variables from master parameter
+- Version 1.1.2 (September 2021) has the following improvements and bugfixes:
+  - IBM Spectrum Symphony version 7.3.1
+  - New option (cluster.adminPasswordSecretName) - K8S secret with Admin password
 
 ## Operator architecture <a name="architecture"></a>
 
@@ -383,6 +387,22 @@ secret/my-scripts created
 ```
 
 Use the secret when you create SymphonyCluster: `cluster.scriptsSecretName='my-scripts'`. You will see in container logs the scripts were executed.
+
+### Admin password <a name="adminpasswd"></a>
+
+From IBM Spectrum Symphony verion 7.3.2.0 it's required to set Admin password during the installation.
+A new parameter cluster.adminPasswordSecretName was introduced to specify K8S secret name with Admin user password.
+This parameter is optional, if not provided, the old default password is used.
+The secret's parameter name must be "passwd":
+```
+kind: Secret
+apiVersion: v1
+metadata:
+  name: my-admin-password
+data:
+  passwd: QWRtaW4x
+type: Opaque
+```
 
 ### Volumes <a name="volumes"></a>
 
